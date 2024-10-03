@@ -1,13 +1,19 @@
 import axios from 'axios';
+import dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-// console.log("API Base URL:", process.env.REACT_APP_BASE_URL);
+// Determine the correct .env file based on the environment
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
 
-// const apiClient = axios.create({
-//   baseURL: process.env.REACT_APP_BASE_URL || 'http://localhost:5000', // Default to localhost for development
-// });
+// Get dirname using ES6 Module syntax (would just be a global variable __dirname in Common JS)
+const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load the appropriate .env file
+dotenv.config({ path: path.resolve(dirname, `../../../${envFile}`) })
 
 const apiClient = axios.create({
-  baseURL: 'https://peak-performance-backend-394f316db343.herokuapp.com/', // Default to localhost for development
+  baseURL: process.env.SERVER_URL
 });
 
 export default apiClient;
