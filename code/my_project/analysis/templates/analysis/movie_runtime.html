@@ -4,9 +4,9 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>MDVP | Dashboard V3 </title><!--begin::Primary Meta Tags-->
+    <title>MDVP | Dashboard </title><!--begin::Primary Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="title" content="MDVP | Dashboard v3">
+    <meta name="title" content="MDVP | Dashboard">
     <meta name="author" content="ColorlibHQ">
     <meta name="description" content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS.">
     <meta name="keywords" content="bootstrap 5, bootstrap, bootstrap 5 admin dashboard, bootstrap 5 dashboard, bootstrap 5 charts, bootstrap 5 calendar, bootstrap 5 datepicker, bootstrap 5 tables, bootstrap 5 datatable, vanilla js datatable, colorlibhq, colorlibhq dashboard, colorlibhq admin dashboard"><!--end::Primary Meta Tags--><!--begin::Fonts-->
@@ -125,7 +125,7 @@
                 <nav class="mt-2"> <!--begin::Sidebar Menu-->
                     <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
                         <li class="nav-item"> 
-                            <a href="{% url 'analysis:dashboard' %}" class="nav-link active"> <!-- Direct link to index.html -->
+                            <a href="{% url 'analysis:dashboard' %}" class="nav-link active"> <!-- Direct link to dashboard.html -->
                                 <i class="nav-icon bi bi-speedometer"></i>
                                 <p>
                                     Dashboard
@@ -147,10 +147,10 @@
                                         <p>Genre Insights</p>
                                 </div> </li>
                                 <li class="nav-item">
-                                  <div href="./widgets/info-box.html" class="nav-link">
+                                  <a href="{% url 'analysis:movie_runtime' %}" class="nav-link">
                                       <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
                                       <p>Movie Runtime</p>
-                                  </div>
+                                  </a>
                               </li>
                                 <li class="nav-item"> <div href="./widgets/cards.html" class="nav-link"> <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
                                         <p>Language Diversity</p>
@@ -349,7 +349,7 @@
 
 <script type="text/javascript">
   // Get data from Django, converting it to a JavaScript object
-  var chartData = JSON.parse('{{ list_joson1|safe|escapejs }}');  // Use escapejs to escape special characters
+  var chartData = JSON.parse('{{ movie_data|safe|escapejs }}');  // Adjusted to new context data key
   console.log(chartData);  // Check what data is being passed
 
   var dom = document.getElementById('movie-by-intervals-chart');

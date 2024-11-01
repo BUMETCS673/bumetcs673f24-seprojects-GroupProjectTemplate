@@ -30,7 +30,7 @@ EXPOSE 8000
 
 WORKDIR /app/my_project
 # Wait for MySQL to be available, then start the Django development server
-CMD ["sh", "-c", "until nc -z $DB_HOST $DB_PORT; do echo 'Waiting for MySQL...'; sleep 3; done; python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "until nc -z $DB_HOST $DB_PORT; do echo 'Waiting for MySQL...'; sleep 3; done; python /app/my_project/manage.py runserver 0.0.0.0:8000"]
 
  # Add the my_project directory to PYTHONPATH
 ENV PYTHONPATH="/app/my_project:${PYTHONPATH}"
