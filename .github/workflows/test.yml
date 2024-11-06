@@ -29,7 +29,6 @@ jobs:
             sleep 5
           done
           echo "MySQL is healthy."
-        
 
       - name: Run migrations
         run: docker-compose -f code/docker-compose.yml exec -T app python manage.py migrate
