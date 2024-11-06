@@ -16,8 +16,11 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v2
 
+      - name: Install Docker Compose
+        run: sudo apt-get install docker-compose -y
+
       - name: Set up Docker Compose
-        run: docker-compose -f docker-compose.yml up -d
+        run: docker-compose -f code/docker-compose.yml up -d
 
       - name: Wait for MySQL to be healthy
         run: |
@@ -28,10 +31,10 @@ jobs:
           echo "MySQL is healthy."
 
       - name: Run migrations
-        run: docker-compose exec app python manage.py migrate
+        run: docker-compose -f code/docker-compose.yml exec app python manage.py migrate
 
       - name: Run tests
-        run: docker-compose exec app python manage.py test
+        run: docker-compose -f code/docker-compose.yml exec app python manage.py test
 
       - name: Shut down Docker Compose
-        run: docker-compose -f docker-compose.yml down
+        run: docker-compose -f code/docker-compose.yml down
