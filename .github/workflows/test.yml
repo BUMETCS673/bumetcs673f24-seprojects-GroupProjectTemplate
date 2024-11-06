@@ -16,10 +16,10 @@ jobs:
       db:
         image: mysql:8.0
         env:
-          MYSQL_DATABASE: movie_data
-          MYSQL_USER: selina
-          MYSQL_PASSWORD: snowBall
-          MYSQL_ROOT_PASSWORD: snowBall2024
+          MYSQL_DATABASE: ${{ secrets.DB_NAME }}
+          MYSQL_USER: ${{ secrets.DB_USER }}
+          MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
@@ -40,14 +40,20 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r code/requirements.txt
+          pip install -r requirements.txt
 
       - name: Run migrations
         env:
           DB_HOST: 127.0.0.1
-        run: python code/my_project/manage.py migrate
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: python manage.py migrate
 
       - name: Run tests
         env:
           DB_HOST: 127.0.0.1
-        run: python code/my_project/manage.py test
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: python manage.py test
