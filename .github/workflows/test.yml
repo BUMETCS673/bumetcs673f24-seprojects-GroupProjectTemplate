@@ -38,7 +38,7 @@ jobs:
           pip install -r code/requirements.txt
 
       - name: Wait for MySQL to initialize
-        run: sleep 15  # 等待 15 秒，确保数据库完全启动
+        run: sleep 30
 
       - name: Run migrations
         env:
