@@ -37,6 +37,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r code/requirements.txt
 
+      - name: Wait for MySQL to initialize
+        run: sleep 15  # 等待 15 秒，确保数据库完全启动
+
       - name: Run migrations
         env:
           DB_HOST: 127.0.0.1
