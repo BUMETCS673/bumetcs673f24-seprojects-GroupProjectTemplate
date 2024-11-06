@@ -20,7 +20,7 @@ jobs:
         run: sudo apt-get install docker-compose -y
 
       - name: Set up Docker Compose
-        run: docker-compose -f code/docker-compose.yml up -d
+        run: docker-compose -f code/docker-compose.yml up --build -d
 
       - name: Wait for MySQL to be healthy
         run: |
