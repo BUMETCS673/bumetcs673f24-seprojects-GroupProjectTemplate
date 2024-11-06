@@ -16,15 +16,15 @@ jobs:
       db:
         image: mysql:8.0
         env:
-          MYSQL_DATABASE: ${{ secrets.DB_NAME }}
-          MYSQL_USER: ${{ secrets.DB_USER }}
-          MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+          MYSQL_DATABASE: movie_data
+          MYSQL_USER: selina
+          MYSQL_PASSWORD: snowBall
+          MYSQL_ROOT_PASSWORD: snowBall2024
         options: >-
           --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
+          --health-interval=15s
+          --health-timeout=10s
+          --health-retries=10
         ports:
           - 3306:3306
 
@@ -45,9 +45,15 @@ jobs:
       - name: Run migrations
         env:
           DB_HOST: 127.0.0.1
+          DB_NAME: movie_data
+          DB_USER: selina
+          DB_PASSWORD: snowBall
         run: python code/my_project/manage.py migrate
 
       - name: Run tests
         env:
           DB_HOST: 127.0.0.1
+          DB_NAME: movie_data
+          DB_USER: selina
+          DB_PASSWORD: snowBall
         run: python code/my_project/manage.py test
