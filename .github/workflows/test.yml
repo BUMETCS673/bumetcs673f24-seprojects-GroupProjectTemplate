@@ -20,11 +20,6 @@ jobs:
           MYSQL_USER: selina
           MYSQL_PASSWORD: snowBall
           MYSQL_ROOT_PASSWORD: snowBall2024
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=15s
-          --health-timeout=10s
-          --health-retries=10
         ports:
           - 3306:3306
 
