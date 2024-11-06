@@ -32,9 +32,6 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v2
 
-      - name: Change directory to code
-        run: cd code
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -48,9 +45,9 @@ jobs:
       - name: Run migrations
         env:
           DB_HOST: 127.0.0.1
-        run: python code/manage.py migrate
+        run: python code/my_project/manage.py migrate
 
       - name: Run tests
         env:
           DB_HOST: 127.0.0.1
-        run: python code/manage.py test
+        run: python code/my_project/manage.py test
