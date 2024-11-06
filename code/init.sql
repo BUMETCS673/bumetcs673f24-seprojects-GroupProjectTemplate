@@ -1,0 +1,2 @@
+GRANT ALL PRIVILEGES ON movie_data.* TO 'selina'@'%';
+FLUSH PRIVILEGES;
