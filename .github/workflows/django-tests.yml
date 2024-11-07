@@ -26,7 +26,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r code/requirements.txt
 
+      - name: Override Database Configuration
+        run: |
+          export DJANGO_SETTINGS_MODULE=my_project.settings
+          export DATABASE_ENGINE=django.db.backends.sqlite3
+          export DATABASE_NAME=:memory:
+
       - name: Run Django Tests
+        env:
+          DATABASE_ENGINE: "django.db.backends.sqlite3"
+          DATABASE_NAME: ":memory:"
+          DJANGO_SETTINGS_MODULE: "my_project.settings"
         run: |
           cd code/my_project
           python manage.py test
