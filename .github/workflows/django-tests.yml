@@ -12,31 +12,48 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Clean up any existing containers using port 3306
-        run: |
-          docker ps -q --filter "expose=3306" | xargs -r docker stop
-          docker ps -a -q --filter "expose=3306" | xargs -r docker rm
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
 
+    steps:
       - name: Check out the code
         uses: actions/checkout@v2
 
-      - name: Install Docker Compose
-        run: sudo apt-get install docker-compose -y
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
 
-      - name: Set up Docker Compose and Build
-        run: docker-compose -f code/docker-compose.yml up --build -d
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r code/requirements.txt
 
       - name: Wait for MySQL to be healthy
         run: |
-          until [ "$(docker inspect -f '{{.State.Health.Status}}' my_sql_db)" == "healthy" ]; do
-            echo "Waiting for MySQL to be healthy..."
+          until mysqladmin ping -h"localhost" --silent; do
+            echo "Waiting for MySQL..."
             sleep 5
           done
-          echo "MySQL is healthy."
 
       - name: Run Django Tests
-        run: docker-compose -f code/docker-compose.yml exec -T app python manage.py test
-
-      - name: Shut down Docker Compose
-        run: docker-compose -f code/docker-compose.yml down
+        env:
+          DB_HOST: localhost
+          DB_PORT: 3306
+          DB_NAME: test_db
+          DB_USER: root
+          DB_PASSWORD: root
+        run: |
+          cd code/my_project
+          python manage.py test
