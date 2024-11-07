@@ -12,20 +12,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_db
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-        ports:
-          - 3306:3306
-
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
@@ -40,20 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r code/requirements.txt
 
-      - name: Wait for MySQL to be healthy
-        run: |
-          until mysqladmin ping -h"localhost" --silent; do
-            echo "Waiting for MySQL..."
-            sleep 5
-          done
-
       - name: Run Django Tests
-        env:
-          DB_HOST: localhost
-          DB_PORT: 3306
-          DB_NAME: test_db
-          DB_USER: root
-          DB_PASSWORD: root
         run: |
           cd code/my_project
           python manage.py test
