@@ -22,6 +22,12 @@ COPY requirements.txt /app/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+
+COPY wait-for-it.sh /app/wait-for-it.sh
+
+# Make it executable
+RUN chmod +x /app/wait-for-it.sh
+
 # Copy the rest of your project code into the container
 COPY . /app/
 
