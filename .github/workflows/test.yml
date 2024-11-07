@@ -36,7 +36,7 @@ jobs:
           echo "MySQL is healthy."
 
       - name: Run Django Tests
-        run: docker-compose -f code/docker-compose.yml exec app python manage.py test
+        run: docker-compose -f code/docker-compose.yml exec -T app python manage.py test
 
       - name: Shut down Docker Compose
         run: docker-compose -f code/docker-compose.yml down
