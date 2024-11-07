@@ -31,7 +31,7 @@ jobs:
       - name: Build and Push Docker hub
         uses: docker/build-push-action@v2
         with:
-            context: .
+            context: ./code
             platforms: linux/amd64
             push: true
             tags: |
