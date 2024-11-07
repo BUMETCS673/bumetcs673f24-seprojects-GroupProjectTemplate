@@ -16,8 +16,8 @@ services:
         condition: service_healthy
     environment:
       - DB_NAME=movie_data
-      - DB_USER=selina
-      - DB_PASSWORD=snowBall
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
       - DB_PORT=3306
     command: ["/app/wait-for-it.sh", "db:3306", "--", "python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -28,7 +28,7 @@ services:
     image: mysql:8.0
     environment:
       - MYSQL_DATABASE=movie_data
-      - MYSQL_ROOT_PASSWORD=snowBall2024
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
 
 
     ports:
