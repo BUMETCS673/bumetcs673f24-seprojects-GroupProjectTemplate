@@ -152,6 +152,12 @@ def process_funnel_data(df):
     funnel_data = [{'name': country, 'value': count} for country, count in country_counts.items()]
     return funnel_data
 
+# Add an API Endpoint for funnel_data test
+def funnel_data_api(request):
+    df = fetch_movie_data()  #  fetches our movie data DataFrame
+    funnel_data = process_funnel_data(df)  # Process the data using funnel data function
+    return JsonResponse(funnel_data, safe=False)  # Return as JSON array
+
 def paginated_movie_table(request):
     # Fetch data for the table
     df = fetch_movie_data()

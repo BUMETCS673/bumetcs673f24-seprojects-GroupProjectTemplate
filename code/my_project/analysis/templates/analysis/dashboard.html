@@ -414,7 +414,8 @@
     initChartWithTheme('top-production-companies-chart', topCompaniesData, 'bar');
     initChartWithTheme('award-bubble-chart', awardBubbleData, 'bubble');
     initChartWithTheme('rating-distribution-chart', ratingDistributionData, 'nested_pie'); 
-    initChartWithTheme('movies-produced-funnel', funnelData, 'funnel');
+    //initChartWithTheme('movies-produced-funnel', funnelData, 'funnel');
+    initMovieProductionChart('movies-produced-funnel', funnelData);  // Initialize the Movie Production chart
 
     
     function updateTopProductionCompaniesChart(data) {
@@ -483,10 +484,9 @@
     }
   });
 </script>
-<!-- Link to charts-setup.js -->
+<!-- Link to charts-setup.js, movieProductionChart.js -->
 <script src="{% static 'analysis/js/charts-setup.js' %}"></script>
-
-
+<script type="module" src="{% static 'analysis/js/movieProductionChart.js' %}"></script>
 
 <!-- Insert the Color Mode Toggler script here -->
 <script>    

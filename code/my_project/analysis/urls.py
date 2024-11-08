@@ -12,6 +12,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard_view, name='dashboard'),  # Dashboard page
     path('dashboard/paginated_movie_table/', views.paginated_movie_table, name='paginated_movie_table'), # handle the AJAX pagination view
     path('dashboard/get-top-production-companies/', views.get_top_production_companies, name='get_top_production_companies'), # handle Top bar update
+    path('funnel-data/', views.funnel_data_api, name='funnel_data_api'), # for API test
     #path('box_office/', views.box_office_view, name='box_office'),  # Box_Office page
     #path('genre_insights/', views.genre_insights_view, name='genre_insights'),  # Genre_Insights page
     #path('movie_runtime/', views.movie_runtime_view, name='movie_runtime'),  # Movie_Runtime page

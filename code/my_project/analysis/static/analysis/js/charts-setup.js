@@ -369,7 +369,7 @@ function initChartWithTheme(domId, data, type) {
 
   window.addEventListener('resize', () => chart.resize());
   
-  
 }
 
-
+// Assign to window object to make it globally accessible
+window.initChartWithTheme = initChartWithTheme;
