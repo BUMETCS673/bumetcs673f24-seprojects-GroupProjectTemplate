@@ -122,7 +122,7 @@
                 </ul> <!--end::End Navbar Links-->
             </div> <!--end::Container-->
         </nav> <!--end::Header--> <!--begin::Sidebar-->
-        <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark"> <!--begin::Sidebar Brand-->
+        <aside class="app-sidebar bg-body-secondary shadow" > <!-- begin::Sidebar Brand -->
             <div class="sidebar-brand"> <!--begin::Brand Link--> <a href="{% url 'analysis:index' %}" class="brand-link"> <!--begin::Brand Image--> <img src="{% static 'analysis/assets/img/mdvpLogo.png' %}" alt="MDVP Logo" class="brand-image opacity-75 shadow"> <!--end::Brand Image--> <!--begin::Brand Text--> <span class="brand-text fw-light">TEAM 3</span> <!--end::Brand Text--> </a> <!--end::Brand Link--> </div> <!--end::Sidebar Brand--> <!--begin::Sidebar Wrapper-->
             <div class="sidebar-wrapper">
                 <nav class="mt-2"> <!--begin::Sidebar Menu-->
@@ -155,9 +155,9 @@
                                       <p>Movie Runtime</p>
                                   </div>
                               </li>
-                                <li class="nav-item"> <div href="./widgets/cards.html" class="nav-link"> <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
+                                <li class="nav-item"> <a href="{% url 'analysis:language_diversity' %}" class="nav-link"> <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
                                         <p>Language Diversity</p>
-                                </div> </li>    
+                                <a> </li>    
                             </ul>
                         </li>
                         <li class="nav-item"> <a href="#" class="nav-link"> <i class="nav-icon bi bi-tree-fill"></i>
@@ -185,7 +185,7 @@
                                 <li class="nav-item"> <div href="./forms/general.html" class="nav-link"> <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
                                         <p>Trend Analysis</p>
                                 </div> </li>
-                                <li class="nav-item"> <div href="./forms/general.html" class="nav-link"> <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
+                                <li class="nav-item"> <div href="{% url 'analysis:dashboard' %}" class="nav-link"> <i class="nav-icon bi bi-circle" style="font-size: 0.5rem;"></i>
                                         <p>AI Reports</p>
                                 </div> </li>
                             </ul>
@@ -334,10 +334,7 @@
                         </div> <!-- /.card-body -->
                       </div> <!-- /.card -->
                     </div> <!-- /.col-12 -->
-                  </div> <!-- /.row --> 
-
-                
-              
+                  </div> <!-- /.row -->             
             </div> <!-- /.container-fluid -->
         </div> <!-- /.app-content -->
         
@@ -414,7 +411,8 @@
     initChartWithTheme('top-production-companies-chart', topCompaniesData, 'bar');
     initChartWithTheme('award-bubble-chart', awardBubbleData, 'bubble');
     initChartWithTheme('rating-distribution-chart', ratingDistributionData, 'nested_pie'); 
-    initChartWithTheme('movies-produced-funnel', funnelData, 'funnel');
+    //initChartWithTheme('movies-produced-funnel', funnelData, 'funnel');
+    initMovieProductionChart('movies-produced-funnel', funnelData);  // Initialize the Movie Production chart
 
     
     function updateTopProductionCompaniesChart(data) {
@@ -483,10 +481,9 @@
     }
   });
 </script>
-<!-- Link to charts-setup.js -->
+<!-- Link to charts-setup.js, movieProductionChart.js -->
 <script src="{% static 'analysis/js/charts-setup.js' %}"></script>
-
-
+<script type="module" src="{% static 'analysis/js/movieProductionChart.js' %}"></script>
 
 <!-- Insert the Color Mode Toggler script here -->
 <script>    

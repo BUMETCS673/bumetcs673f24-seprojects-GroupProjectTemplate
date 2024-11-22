@@ -29,21 +29,13 @@ def index(request):
     return render(request, 'analysis/index.html', context)
 
 
-# def fetch_data_from_db():
-#     """Fetches all movie data from the database using Django's connection."""
-#     with connection.cursor() as cursor:
-#         cursor.execute("SELECT * FROM data")
-#         rows = cursor.fetchall()
-#         columns = [col[0] for col in cursor.description]
-#         return pd.DataFrame(rows, columns=columns)
-
 def fetch_movie_data():
-    movies = Movie.objects.all().values('title', 'year', 'score', 'awards', 'type','gross','production_company','production_country','url','ontime')
+    movies = Movie.objects.all().values('index','title', 'year', 'score', 'awards', 'type','gross','production_company','production_country','url','ontime','language','oscar_number')
     return pd.DataFrame(list(movies))
 
 df = fetch_movie_data() # make df as global 
 
-
+######################### For Dashboard View ###################
 def process_movie_distribution_by_year_intervals(df):
     """Process movie distribution data into year intervals."""
     range_step = 5
@@ -152,6 +144,12 @@ def process_funnel_data(df):
     funnel_data = [{'name': country, 'value': count} for country, count in country_counts.items()]
     return funnel_data
 
+# Add an API Endpoint for funnel_data test
+def funnel_data_api(request):
+    df = fetch_movie_data()  #  fetches our movie data DataFrame
+    funnel_data = process_funnel_data(df)  # Process the data using funnel data function
+    return JsonResponse(funnel_data, safe=False)  # Return as JSON array
+
 def paginated_movie_table(request):
     # Fetch data for the table
     df = fetch_movie_data()
@@ -225,6 +223,200 @@ def dashboard_view(request):
     }
 
     return render(request, 'analysis/dashboard.html', context)
+
+
+######################### For Language_Diversity View ###################
+
+def clean_and_preprocess_languages(df):
+    """Clean and preprocess the 'language' column in the DataFrame."""
+    if 'language' not in df.columns:
+        return df
+    
+    # Clean and normalize the language column
+    df['language'] = (
+        df['language']
+        .str.replace(r'\r\n', '', regex=True)
+        .str.strip()
+        .str.split(' ')
+    )
+    df = df.explode('language')
+    df['language'] = df['language'].str.strip()
+
+     # Correct common typos or inconsistencies
+    typo_corrections = {
+        "Japenses": "Japanese",  # Fix the typo
+        # Add other typos or inconsistencies here
+    }
+    df['language'] = df['language'].replace(typo_corrections)
+
+    # Replace empty strings with "Unknown"
+    df['language'] = df['language'].replace('', 'Unknown').fillna('Unknown')
+      
+    return df
+
+def process_language_stacked_bar_data(df, top_n=10):
+    """
+    Process language and genre data for stacked bar chart.
+    Ensure the total percentage for each language sums to 100%.
+    """
+    if 'type' in df.columns and 'language' in df.columns:
+        # Ensure unique index
+        if not df.index.is_unique:
+            df = df.reset_index(drop=True)
+
+        # Add index column explicitly if not present
+        if 'index' not in df.columns:
+            df = df.reset_index()
+
+        # Process the 'type' (genre) column
+        df['type_split'] = df['type'].str.split(',')
+        df = df.explode('type_split')
+        df['type_split'] = df['type_split'].str.strip().fillna('Others')
+
+        # Group smaller genres into 'Others'
+        top_genres = df['type_split'].value_counts().nlargest(5).index
+        df['type_split'] = df['type_split'].apply(lambda x: x if x in top_genres else 'Others') 
+
+        # Process the 'language' column
+        df['language_split'] = df['language'].str.split(' ')
+        df = df.explode('language_split')
+        df['language_split'] = df['language_split'].str.strip().replace('', 'Unknown').fillna('Unknown')
+
+        # Group smaller languages into 'Others'
+        top_languages = df['language_split'].value_counts().nlargest(top_n).index
+        df['language_split'] = df['language_split'].apply(lambda x: x if x in top_languages else 'Others')
+
+        # Exclude "Unknown" languages
+        df = df[df['language_split'] != 'Unknown']
+
+        # Normalize contributions per movie
+        df['language_count'] = df.groupby('index')['language_split'].transform('count')
+        df['genre_count'] = df.groupby('index')['type_split'].transform('count')
+        df['weight'] = 1 / (df['language_count'] * df['genre_count'])
+
+        # Group by language and genre, summing weights
+        grouped = df.groupby(['language_split', 'type_split'])['weight'].sum().unstack(fill_value=0)
+
+        # Normalize rows to ensure percentages sum to 100%
+        def scale_to_100(row):
+            total = row.sum()
+            if total == 0:
+                return row  # Skip empty rows
+            # Scale all categories proportionally
+            return row / total
+
+        grouped = grouped.apply(scale_to_100, axis=1)
+
+        # Prepare chart data
+        chart_data = {
+            "languages": grouped.index.tolist(),
+            "genres": grouped.columns.tolist(),
+            "data": grouped.values.tolist(),
+        }
+
+        return chart_data
+
+    return {"languages": [], "genres": [], "data": []}
+
+
+
+def process_language_map_data(df):
+    """
+    Process language map data and add coordinates.
+    """
+    COUNTRY_COORDINATES = {
+        "United States": [-100, 40],
+        "United Kingdom": [-1.5, 54],
+        "France": [2.2137, 46.2276],
+        "Germany": [10.4515, 51.1657],
+        "Australia": [133.7751, -25.2744],
+        "India": [78.9629, 20.5937],
+        "Japan": [138.2529, 36.2048],
+        "Italy": [12.5674, 41.8719],
+        "Spain": [-3.7038, 40.4168],
+        "Sweden": [18.6435, 60.1282],
+    }
+    # Clean and preprocess languages
+    df = clean_and_preprocess_languages(df)
+
+    # Extract production country and languages
+    df['production_country'] = df['production_country'].str.split(',')
+    country_data = df.explode('production_country')
+    country_data['production_country'] = country_data['production_country'].str.strip()
+
+    # Top 10 countries
+    top_countries = (
+        country_data['production_country'].value_counts().head(10).index
+    )
+    country_data = country_data[country_data['production_country'].isin(top_countries)]
+
+    # Aggregate language data per country
+    map_data = []
+    for country, group in country_data.groupby('production_country'):
+        total_movies = len(group)
+        language_counts = group['language'].value_counts()
+
+        # Handle "Multilingual" group
+        top_languages = language_counts.head(3)
+        multilingual_count = total_movies - top_languages.sum()
+        if multilingual_count > 0:
+            top_languages['Multilingual'] = multilingual_count
+
+        # Prepare language data for the country
+        language_data = [
+            {"name": lang, "value": int(count)}
+            for lang, count in top_languages.items()
+        ]
+        map_data.append({
+            "name": country,
+            "value": total_movies,
+            "languages": language_data,
+            "coordinates": COUNTRY_COORDINATES.get(country, [0, 0])  # Default to [0, 0] if not found
+        })
+
+    return map_data
+
+def language_map_view(request):
+    """Django view to return map data."""
+    df = fetch_movie_data()
+    map_data = process_language_map_data(df)
+    return JsonResponse(map_data, safe=False)
+
+
+def language_diversity_view(request):
+    """View for Language Diversity Analysis."""
+    # Fetch data from the Movie model
+    df = fetch_movie_data()  
+    # Prepare data for the visualizations
+    stacked_bar_chart_data = process_language_stacked_bar_data(df)
+    # tree_chart_data = process_language_treechart_data(df)
+    map_data = process_language_map_data(df)
+    context = {
+        'stacked_bar_chart_data': json.dumps(stacked_bar_chart_data),
+        'map_data': json.dumps(map_data),
+    }
+    
+    return render(request, 'analysis/language_diversity.html', context)
+
+
+
+
+
+############ help fuction for oscar_number
+# def ordinal(number):
+#     """
+#     Converts an integer into its ordinal representation (e.g., 1 -> 1st, 2 -> 2nd).
+#     """
+#     if not number:
+#         return None
+#     suffix = ['th', 'st', 'nd', 'rd', 'th'][min(number % 10, 4)]
+#     if 11 <= (number % 100) <= 13:
+#         suffix = 'th'
+#     return f"{number}{suffix}"
+
+# movie = Movie.objects.get(pk=1)
+# print(f"{movie.title} won awards at the {ordinal(movie.oscar_number)} Oscars.")
+
 
 
 

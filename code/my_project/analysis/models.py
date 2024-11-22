@@ -1,6 +1,7 @@
 from django.db import models
 
 class Movie(models.Model):
+    index = models.IntegerField(primary_key=True,db_column='Unnamed: 0') # Maps directly to 'Unnamed: 0'
     title = models.CharField(max_length=255)
     year = models.IntegerField()
     score = models.FloatField()
@@ -12,7 +13,7 @@ class Movie(models.Model):
     production_country = models.CharField(max_length=100, null=True, blank=True)
     gross = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     awards = models.TextField(null=True, blank=True)
-    geted = models.IntegerField(null=True, blank=True)  # Possibly change to an appropriate name and field type
+    oscar_number = models.IntegerField(null=True, blank=True,db_column='geted')  # change to an appropriate name for "geted"
     class Meta:
         db_table = 'data'  # Map this model to the 'data' table
         managed = False    # Do not create, delete, or alter this table with migrations

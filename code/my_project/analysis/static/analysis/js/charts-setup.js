@@ -157,11 +157,17 @@ function applyTheme(chart, data, type, theme) {
             scale: true
         },
         tooltip: {
-            trigger: 'item',
-            formatter: function(params) {
-                return `Title: ${params.data[3]}<br/>Rating: ${params.value[0]}<br/>Awards: ${params.value[1]}<br/>Gross: $${params.value[2]}`;
-            }
-        },
+          trigger: 'item',
+          formatter: function(params) {
+              const grossFormatted = new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  minimumFractionDigits: 2
+              }).format(params.value[2]);
+      
+              return `Title: ${params.data[3]}<br/>Rating: ${params.value[0]}<br/>Awards: ${params.value[1]}<br/>Gross Revenue: ${grossFormatted}`;
+          }
+      },
         series: [
           {
               name: 'Oscar',
@@ -345,7 +351,203 @@ else if (type === 'funnel') {
     ]
   };
 }
+else if (type === 'tree') {
+  options = {
+      ...commonOptions,
+      series: [
+          {
+              type: 'tree',
+              data: data,
+              top: '5%',
+              left: '10%',
+              bottom: '5%',
+              right: '10%',
+              symbolSize: 10,
+              label: {
+                  position: 'top',
+                  verticalAlign: 'middle',
+                  align: 'right',
+                  fontSize: 10,
+                  color: isDark ? '#ffffff' : '#000000'
+              },
+              leaves: {
+                  label: {
+                      position: 'right',
+                      verticalAlign: 'middle',
+                      align: 'left'
+                  }
+              },
+              expandAndCollapse: true,
+              initialTreeDepth: 2,
+              animationDuration: 750,
+              animationEasing: 'linear'
+          }
+      ]
+  };
+}
+else if (type === 'stacked-bar') {
+  // Define color set
+  const colorSet = [
+    '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', 
+    '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'
+  ];
 
+// Custom legend order: Drama first, Others last
+  const customOrder = ["Drama", ...data.genres.filter(genre => genre !== "Drama" && genre !== "Others"), "Others"];
+// Reorder the series based on the custom order
+  const orderedSeries = customOrder.map((name) => {
+  const sid = data.genres.indexOf(name); // Get the original index of the genre
+  return {
+    name, // Genre name
+    type: 'bar',
+    stack: 'total',
+    barWidth: '60%',
+    label: {
+      show: false,
+      formatter: params => `${(params.value * 100).toFixed(1)}%`,
+      color: isDark ? '#ffffff' : '#000000',
+    },
+    data: data.data.map(row => row[sid]), // Map the corresponding data column
+  };
+});
+ 
+  // Construct options for the chart
+  options = {
+    ...commonOptions,
+    title: {
+      left: 'center',
+      textStyle: { color: isDark ? '#ffffff' : '#000000' }
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function (params) {
+        // Extract axis value from the first parameter
+        const axisValue = params[0]?.axisValueLabel || 'Unknown';
+        let tooltipText = `<strong>${axisValue}</strong><br>`; // Axis value at the top
+
+        // Iterate over series data
+        params.forEach((param) => {
+            if (param.seriesName && param.data) {
+                const percentage = param.data * 100; // Convert value to percentage
+                tooltipText += `${param.seriesName}: ${percentage.toFixed(1)}%<br>`;
+            }
+        });
+
+        return tooltipText || 'No data available';
+      },
+      axisPointer: {
+        type: 'shadow' // For bar charts
+      }
+    },
+    legend: {
+      data: data.genres, // Series names
+      textStyle: { color: isDark ? '#ffffff' : '#000000' },
+      data: customOrder, // Use the reordered legend
+    },
+    grid: {
+      left: '10%',
+      right: '10%',
+      bottom: '15%',
+      top: '15%'
+    },
+    xAxis: {
+      type: 'category',
+      data: data.languages, // x-axis categories
+      axisLine: { lineStyle: { color: isDark ? '#ffffff' : '#000000' } },
+      axisLabel: { color: isDark ? '#ffffff' : '#000000' }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 1, // Limit the Y-axis to 1
+      axisLine: { lineStyle: { color: isDark ? '#ffffff' : '#000000' } },
+      axisLabel: { color: isDark ? '#ffffff' : '#000000' }
+    },
+    color: colorSet, // Apply the custom color set
+    series: orderedSeries
+  };
+}
+
+// Map options
+else if (type === 'map') {
+  // Prepare pie chart series for each country
+  const pieSeries = data.map((country) => ({
+    type: 'pie',
+    coordinateSystem: 'geo',
+    z: 5, // Ensure pies are rendered above the map
+    radius: Math.max(10, Math.min(25, country.value /5)), // Adjust size as needed
+    center: country.coordinates || [0, 0], // Fallback if coordinates are not provided
+    data: country.languages.map((lang) => ({
+      name: lang.name,
+      value: lang.value,
+    })),
+    tooltip: {
+      trigger: 'item',
+      formatter: function (params) {
+          return `${country.name}<br>${params.name}: ${params.value} (${params.percent}%)`;
+      }
+  },
+    label: {
+      show: false, // Hide labels for simplicity
+    },
+    labelLine: {
+      show: false, // Hide connecting lines
+    },
+  }));
+
+   // Define color set
+   const colorSet = [
+    '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', 
+    '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc','#ff8c00', '#32cd32', '#8a2be2'
+  ];
+
+  options = {
+    ...commonOptions,
+    geo: {
+      map: 'world',
+      roam: true,
+      itemStyle: {
+        areaColor: '#e7e8ea',
+        borderColor: '#999',
+      },
+      emphasis: {
+        itemStyle: {
+          areaColor: '#cbb76a',
+        },
+      },
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      top: 'middle',
+      itemGap: 10
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: function (params) {
+          if (params.seriesType === 'map') {
+              return params.name
+                  ? `${params.name}<br>Total Movies: ${params.value || 'No data'}`
+                  : 'No data';
+          }
+      }
+  },
+    color: colorSet, // Apply the custom color set
+    series: [
+      {
+        type: 'map',
+        map: 'world',
+        roam: true,
+        data: data.map((country) => ({
+          name: country.name,
+          value: country.value,
+        })),
+      },
+      ...pieSeries, // Add pie chart series
+    ],
+  };
+}
+   
   chart.setOption(options);
 }
 
@@ -369,7 +571,7 @@ function initChartWithTheme(domId, data, type) {
 
   window.addEventListener('resize', () => chart.resize());
   
-  
 }
 
-
+// Assign to window object to make it globally accessible
+window.initChartWithTheme = initChartWithTheme;
