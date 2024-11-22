@@ -157,11 +157,17 @@ function applyTheme(chart, data, type, theme) {
             scale: true
         },
         tooltip: {
-            trigger: 'item',
-            formatter: function(params) {
-                return `Title: ${params.data[3]}<br/>Rating: ${params.value[0]}<br/>Awards: ${params.value[1]}<br/>Gross: $${params.value[2]}`;
-            }
-        },
+          trigger: 'item',
+          formatter: function(params) {
+              const grossFormatted = new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  minimumFractionDigits: 2
+              }).format(params.value[2]);
+      
+              return `Title: ${params.data[3]}<br/>Rating: ${params.value[0]}<br/>Awards: ${params.value[1]}<br/>Gross Revenue: ${grossFormatted}`;
+          }
+      },
         series: [
           {
               name: 'Oscar',
