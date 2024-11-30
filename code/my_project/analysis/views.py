@@ -224,6 +224,83 @@ def dashboard_view(request):
 
     return render(request, 'analysis/dashboard.html', context)
 
+######################### For box_performance View ######################
+
+def process_box_office_data(df):
+    """
+    Process the data for the box office visualization with scaled gross values.
+    """
+
+    # Ensure the 'production_country' column exists and split by ',' or '\r\n'
+    if 'production_country' in df.columns:
+        df['production_country'] = df['production_country'].str.split(',').explode().reset_index(drop=True)
+        df['production_country'] = df['production_country'].str.strip()  # Remove extra spaces
+
+    # Convert gross values to float, handling invalid data
+    def safe_convert_gross(value):
+        try:
+            return float(value.replace(',', '')) / 1_000_000  # Convert to millions of dollars
+        except (ValueError, AttributeError):
+            return 0.0
+
+    if 'gross' in df.columns:
+        df['gross'] = df['gross'].apply(safe_convert_gross)
+
+    # Group by year and production country
+    grouped = df.groupby(['year', 'production_country'])
+
+    # Aggregate data
+    aggregated = grouped.agg({
+        'gross': 'sum',  # Sum of gross revenue
+        'title': 'count'  # Number of movies
+    }).reset_index()
+
+    # Filter for top 10 countries using an external helper function
+    top_countries = process_funnel_data(df)
+    top_country_names = [country['name'] for country in top_countries]
+
+    # Create the box office data with year intervals
+    box_office_data = []
+    for start_year in range(1921, 2021, 10):  # Adjust year intervals (e.g., 1921-1925)
+        interval_data = []
+        for country in top_country_names:
+            country_data = aggregated[
+                (aggregated['year'] >= start_year) &
+                (aggregated['year'] < start_year + 10) &
+                (aggregated['production_country'].str.contains(country, na=False))
+            ]
+            interval_data.append({
+                'name': country,
+                'value': [
+                    round(country_data['gross'].sum(), 2) if not country_data.empty else 0.0,  # Total gross revenue (scaled)
+                    int(country_data['title'].sum()) if not country_data.empty else 0,         # Number of movies
+                    next((item['value'] for item in top_countries if item['name'] == country), 0),  # Total static count for Bubble size
+                    country                                                                    # Country name
+                ]
+            })
+        box_office_data.append({
+            'interval': f"{start_year}-{start_year + 10}",
+            'data': interval_data
+        })
+
+    return box_office_data
+
+
+def box_office_view(request):
+   
+    # Fetch movie data
+    df = fetch_movie_data()
+
+    # Process combinedData for ECharts
+    box_office_data = process_box_office_data(df)
+
+    # Pass the processed data to the template
+    context = {
+        'box_office_data': json.dumps(box_office_data),  # Ensure it's JSON-encoded for JavaScript
+    }
+    
+    return render(request, 'analysis/box_office.html', context)  
+  
 
 ######################### For Language_Diversity View ###################
 
@@ -399,6 +476,61 @@ def language_diversity_view(request):
     return render(request, 'analysis/language_diversity.html', context)
 
 
+######################### For genre_insights View ###################
+
+def process_genre_timeline(df):
+    """
+    Processes movie genre data for timeline and pie chart.
+    Groups genres contributing less than 5% into 'Others'.
+    """
+    if 'year' in df.columns and 'type' in df.columns:
+        # Clean the 'type' column to remove unwanted characters
+        df['type'] = df['type'].str.replace(r'[\r\n]', '', regex=True).str.strip()
+
+        # Define year intervals (e.g., 1921-1931, 1931-1941, ..., 2011-2021)
+        bins = list(range(1921, 2022, 10))
+        labels = [f"{start}-{start + 10}" for start in bins[:-1]]
+        df['year_interval'] = pd.cut(df['year'], bins=bins, labels=labels, right=False)
+
+        # Split genres and count occurrences per interval
+        genre_counts = df.assign(type=df['type'].str.split(',')).explode('type')
+        grouped = genre_counts.groupby(['year_interval', 'type']).size().unstack(fill_value=0)
+
+        # Calculate total counts per genre across all intervals
+        total_counts = grouped.sum(axis=0)
+        grand_total = total_counts.sum()
+        percentages = total_counts / grand_total * 100
+
+        # Identify main genres (>= 5%) and others (< 5%)
+        main_genres = total_counts[percentages >= 5].index.tolist()
+        grouped['Others'] = grouped[total_counts[percentages < 5].index].sum(axis=1)
+        grouped = grouped[main_genres + ['Others']]
+
+        # Reset index and prepare the dataset for ECharts
+        grouped = grouped.reset_index()
+        combined_data = [['Year'] + grouped.columns[1:].tolist()]  # Header row
+        combined_data += grouped.values.tolist()  # Data rows
+        return combined_data
+    else:
+        return [["Year"]]
+
+
+def genre_insights_view(request):
+    
+    
+    # Fetch movie data
+    df = fetch_movie_data()
+
+    # Process combinedData for ECharts
+    combined_data = process_genre_timeline(df)
+
+    # Pass the processed data to the template
+    context = {
+        'combinedData': json.dumps(combined_data),  # Ensure it's JSON-encoded for JavaScript
+    }
+    return render(request, 'analysis/genre_insights.html', context)
+
+
 
 
 
@@ -417,23 +549,96 @@ def language_diversity_view(request):
 # movie = Movie.objects.get(pk=1)
 # print(f"{movie.title} won awards at the {ordinal(movie.oscar_number)} Oscars.")
 
+######################## For movie_runtime View ###################
 
+def clean_runtime_data(df):
+    """
+    Cleans the 'ontime' column by converting runtimes into numeric values (in minutes).
+    """
+    def convert_runtime_to_minutes(runtime):
+        try:
+            # Regex to match runtime patterns
+            match = re.match(r"(\d+)h(?:\s*(\d+)m)?", runtime)
+            if match:
+                hours = int(match.group(1))  # Extract hours
+                minutes = int(match.group(2)) if match.group(2) else 0  # Extract minutes
+                return hours * 60 + minutes
+            match = re.match(r"(\d+)m", runtime)  # Match cases with only 'm'
+            if match:
+                return int(match.group(1))
+            return None  # Return None for invalid formats
+        except:
+            return None
 
+    # Apply the conversion to the 'ontime' column
+    df['ontime'] = df['ontime'].apply(convert_runtime_to_minutes)
 
-# def movie_runtime_view(request):
-    # df = fetch_data_from_db()
+    # Drop rows with invalid or missing runtimes
+    df = df.dropna(subset=['ontime'])
 
-    # # Process various visual data
-    # movie_data = process_movie_runtime(df)
-    # languages, language_counts = process_language_data(df)
-    # movie_types, type_counts = process_movie_types(df)
+    # Keep only positive runtimes
+    return df[df['ontime'] > 0]
 
-    # context = {
-    #     'movie_data': json.dumps(movie_data),
-    #     'languages': json.dumps(languages),
-    #     'language_counts': json.dumps(language_counts),
-    #     'movie_types': json.dumps(movie_types),
-    #     'type_counts': json.dumps(type_counts),
-    # }
+def process_runtime_data(df):
+    """
+    Groups movie runtimes into broader and detailed ranges and calculates their distribution.
+    """
+    # Define broader runtime ranges
+    broad_bins = [0, 60, 90, 120, 150, 180, 210, 240, float('inf')]
+    broad_labels = ['0-60', '60-90', '90-120', '120-150', '150-180', '180-210', '210-240', '240+']
 
-    # return render(request, 'analysis/movie_runtime.html', context)
+    # Group movies into broad runtime ranges
+    df['broad_runtime_range'] = pd.cut(df['ontime'], bins=broad_bins, labels=broad_labels, right=False)
+    broad_data = df['broad_runtime_range'].value_counts().sort_index()
+
+    # Define detailed runtime ranges for each broad range
+    detailed_bins = {
+        '0-60': [0, 30, 45, 60],
+        '60-90': [60, 70, 80, 90],
+        '90-120': [90, 100, 110, 120],
+        '120-150': [120, 130, 140, 150],
+        '150-180': [150, 160, 170, 180],
+        '180-210': [180, 190, 200, 210],
+        '210-240': [210, 220, 230, 240],
+        '240+': [240, float('inf')],
+    }
+
+    detailed_data = {}
+    for broad_label, bins in detailed_bins.items():
+        # Filter data for the specific broad range
+        range_df = df[df['broad_runtime_range'] == broad_label]
+        if not range_df.empty:
+            range_df['detailed_runtime_range'] = pd.cut(range_df['ontime'], bins=bins, right=False)
+            detailed_counts = range_df['detailed_runtime_range'].value_counts().sort_index()
+            # Convert Interval to string for JSON serialization
+            detailed_data[broad_label] = {
+                'ranges': [f"{interval.left}-{interval.right}" for interval in detailed_counts.index],
+                'counts': detailed_counts.values.tolist()
+            }
+
+    # Prepare the final data
+    return {
+        'broad': {
+            'ranges': broad_data.index.tolist(),
+            'counts': broad_data.values.tolist()
+        },
+        'detailed': detailed_data
+    }
+
+    
+def movie_runtime_view(request):
+    # Fetch movie data
+    df = fetch_movie_data()
+
+    # Clean the data
+    df = clean_runtime_data(df)
+
+    # Process the data
+    runtime_data = process_runtime_data(df)
+
+    # Prepare data for the template
+    context = {
+        'runtime_data': json.dumps(runtime_data)  # Pass both broad and detailed data
+    }
+
+    return render(request, 'analysis/movie_runtime.html', context)

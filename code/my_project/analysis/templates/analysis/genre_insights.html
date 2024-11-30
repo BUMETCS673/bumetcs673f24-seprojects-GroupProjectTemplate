@@ -13,11 +13,11 @@
         <div class="card mb-4">
             <div class="card-header border-0">
                 <div class="d-flex">
-                    <h3 class="card-title custom-title">Box Office Performance</h3>
+                    <h3 class="card-title custom-title">Movie Genre Distribution</h3>
                 </div>
             </div>
             <div class="card-body">
-                <div id="box-office-chart" style="height: 600px;"></div>
+                <div id="genre-distribution-chart" style="height: 600px;"></div>
             </div>
         </div>
     </div>
@@ -28,12 +28,10 @@
 
 document.addEventListener("DOMContentLoaded", function () {
     // Parse data passed from Django
-    const boxofficeData = JSON.parse('{{ box_office_data|safe|escapejs }}');
-    console.log('box_office_data',boxofficeData)
-   // console.log(combinedData)
+    const combinedData = JSON.parse('{{ combinedData|safe|escapejs }}');
+    console.log(combinedData)
     // Initialize chart
-   initChartWithTheme('box-office-chart', boxofficeData, 'dynamic bubble');
-
+    initChartWithTheme('genre-distribution-chart', combinedData, 'pie and line');
 });
 </script>
 

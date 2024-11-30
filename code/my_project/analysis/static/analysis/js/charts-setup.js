@@ -167,7 +167,7 @@ function applyTheme(chart, data, type, theme) {
       
               return `Title: ${params.data[3]}<br/>Rating: ${params.value[0]}<br/>Awards: ${params.value[1]}<br/>Gross Revenue: ${grossFormatted}`;
           }
-      },
+        },
         series: [
           {
               name: 'Oscar',
@@ -547,7 +547,388 @@ else if (type === 'map') {
     ],
   };
 }
-   
+
+else if (type === 'pie and line') {
+  // Transform the passed original data into the required 'source' format
+  
+  const sourceData = [];
+  const header = ['genre', ...data.slice(1).map(row => row[0])]; // ['genre', '1921-1931', '1931-1941', ...]
+  sourceData.push(header);
+
+  for (let i = 1; i < data[0].length; i++) {
+    const genreRow = [data[0][i]]; // Start with the genre name
+    for (let j = 1; j < data.length; j++) {
+      genreRow.push(data[j][i]); // Append counts for each interval
+    }
+    sourceData.push(genreRow);
+  }
+  // Extract genres for the legend (skip the header row)
+  const genres = sourceData.slice(1).map(row => row[0]);
+
+  // Extract year intervals for the x-axis (skip the 'genre' header)
+  const yearIntervals = sourceData[0].slice(1);
+  
+  options = {
+    ...commonOptions,
+    legend: {
+      top: 'top',
+      data: genres, // Use genres as legend
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'line',
+      },
+    },
+    dataset: {
+      source: sourceData,
+    },
+    xAxis: {
+      type: 'category',
+      name: 'Year Interval',
+      data: yearIntervals,
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Movie Count',
+    },
+    grid: { top: '55%' },
+    series: [
+      // Generate a line series for each genre
+      ...genres.map((genre, index) => ({
+        name: genre,
+        type: 'line',
+        smooth: true,
+        seriesLayoutBy: 'row',
+        datasetIndex: 0,
+        encode: {
+          x: 'Year Interval',
+          y: index + 1, // Offset by 1 to skip 'genre' column
+        },
+        emphasis: { focus: 'series' },
+      })),
+      // Pie chart series
+      {
+        type: 'pie',
+        id: 'pie',
+        radius: '30%',
+        center: ['50%', '25%'],
+        label: {
+          formatter: '{b}: {c} ({d}%)',
+        },
+        encode: {
+          itemName: 'genre',
+          value: yearIntervals[0], // Default to the first year interval
+          tooltip: yearIntervals[0],
+        },
+        data: sourceData.slice(1).map(row => ({
+          name: row[0], // Genre name
+          value: row[1], // Value for the first year interval
+        })),
+      },
+    ],
+  };
+
+// Add event listener to dynamically update the pie chart
+chart.on('updateAxisPointer', function (event) {
+  const xAxisInfo = event.axesInfo[0];
+  if (xAxisInfo) {
+    const intervalIndex = xAxisInfo.value + 1; // Adjust for 0-based indexing
+    const selectedInterval = sourceData[0][intervalIndex]; // Get the selected year interval
+
+    // Update pie chart data
+    const updatedPieData = sourceData.slice(1).map(row => ({
+      name: row[0], // Genre name
+      value: row[intervalIndex], // Value for the selected year interval
+    }));
+
+    chart.setOption({
+      series: [
+        {
+          id: 'pie',
+          label: {
+            formatter: '{b}: {c} ({d}%)',
+          },
+          encode: {
+            value: selectedInterval,
+            tooltip: selectedInterval,
+          },
+          data: updatedPieData,
+        },
+      ],
+    });
+  }
+ });
+}
+else if (type === 'dynamic bubble') {
+  chart.showLoading();
+
+  // Simulate data loading (use actual data variable passed from Django)
+  setTimeout(function () {
+    chart.hideLoading();
+
+    // Bubble size calculation
+    const sizeFunction = function (value) {
+      return Math.sqrt(value)*10; // Adjust bubble size scale
+    };
+
+    // Tooltip formatter
+    const tooltipFormatter = function (params) {
+      const value = params.value;
+      return `
+        <strong>Country:</strong> ${value[3]}<br>
+        <strong>Gross Revenue:</strong> $${value[0]}M<br>
+        <strong>Number of Movies:</strong> ${value[1]}<br>
+        <strong>Total Count:</strong> ${value[2]}
+      `;
+    };
+
+    const schema = [
+      { name: "Gross Revenue", index: 0, text: "Gross Revenue", unit: "M$" },
+      { name: "Number of Movies", index: 1, text: "Number of Movies", unit: "" },
+      { name: "Total Count", index: 2, text: "Total Count", unit: "" },
+      { name: "Country", index: 3, text: "Country", unit: "" },
+    ];
+
+    // Chart options
+    const options = {
+      ...commonOptions,
+      baseOption: {
+        timeline: {
+          axisType: "category",
+          orient: "vertical",
+          autoPlay: true,
+          inverse: true,
+          playInterval: 1500, // Adjust interval speed
+          left: '90%',
+          right: 0,
+          top: 20,
+          bottom: 20,
+          width: 90,
+          height: null,
+          symbol: "none",
+          checkpointStyle: {
+            borderWidth: 2,
+            color: "#ff5722",
+          },
+          controlStyle: {
+            showNextBtn: false,
+            showPrevBtn: false,
+          },
+          label: {
+            position: 'right', // Keeps the labels aligned near the timeline
+            formatter: '{value}', // Ensure the year interval is displayed correctly
+            fontSize: 12,
+            align: 'right', // Moves the text alignment to the left
+            margin: 50,
+          },
+          data: data.map((item) => item.interval), // Populate timeline with year intervals
+        },
+        grid: {
+          left: '10%', // Moves the chart closer to the left edge
+          right: '15%', // Adjust space on the right
+          top: '10%', // Keeps space from the top
+          bottom: '15%', // Keeps space from the bottom
+          containLabel: true, // Ensures labels are included within the grid
+        },
+        
+        tooltip: {
+          trigger: "item",
+          formatter: (params) => {
+            const value = params.data.value;
+            const yearInterval = params.seriesName;
+            return `
+              Year Interval: ${yearInterval}<br>
+              Country: ${value[3]}<br>
+              Gross Revenue: $${value[0]}M<br>
+              Number of Movies: ${value[1]}<br>
+              Total Count: ${value[2]}
+            `;
+          },
+        },
+        legend: {
+          top: "bottom",
+          left: "center",
+          data: data[0]?.data.map((d) => d.name), // Ensure the first interval contains the country names
+        },
+        xAxis: {
+          type: "log",
+          name: schema[0].text,
+          nameLocation: 'end',
+          nameGap: 40, // Increase the gap to move the label downward
+          position: 'bottom', // Ensures it's below the axis line
+          nameTextStyle: {
+            align: 'right',
+            verticalAlign: 'bottom',
+            fontSize: 16,
+          },
+          splitLine: {
+            show: false,
+          },
+          axisLabel: {
+            formatter: "{value} M$",
+          },
+          min: 1,
+          max: 12000, // Adjust based on your data range
+        },
+        yAxis: {
+          type: "value",
+          name: schema[1].text,
+          nameTextStyle: {
+          fontSize: 16,
+          max: 'dataMax',
+          },
+          axisLabel: {
+            formatter: "{value}",
+          },
+          splitLine: {
+            show: false,
+          },
+          min: 0,
+          max: 200, // Adjust based on your data range
+        },
+        visualMap: {
+          show: true,
+          type: 'piecewise',
+          dimension: 3, // Use the 'country' dimension for coloring
+          categories: [...new Set(data.flatMap((item) => item.data.map((d) => d.name)))], // Extract unique country names
+          inRange: {
+            color: ['#ff6e76', '#7cffb2', '#61a0a8', '#d48265', '#fddd60', '#4992ff', '#58d9f9', '#ff8a45', '#8d48e3', '#dd79ff'],
+          },
+          textStyle: {
+            fontSize: 12,
+          },
+          orient: 'horizontal', // Set orientation to horizontal
+          left: 'center', // Align to the center horizontally
+          bottom: 10, // Place it at the bottom of the chart
+          itemWidth: 15, // Adjust the size of the visual map legend items
+          itemHeight: 15,
+          },
+        series: [
+          {
+            type: "scatter",
+            encode: {
+              x: 0,
+              y: 1,
+              tooltip: [0, 1, 2, 3],
+            },
+            itemStyle: {
+              opacity: 0.8,
+            },
+            data: [], // Placeholder; updated dynamically for each interval
+            symbolSize: (val) => sizeFunction(val[2]), // Bubble size based on total count
+          },
+        ],
+        animationDurationUpdate: 1000,
+        animationEasingUpdate: "quinticInOut",
+      },
+      options: data.map((item) => {
+        // Calculate dynamic y-axis max
+        const maxMovies = Math.max(...item.data.map((d) => d.value[1])); // Find the maximum number of movies for this interval
+    
+        return {
+          title: {
+            text: `${item.interval}`,
+            textAlign: 'center',
+            left: '50%',
+            top: '10%',
+            textStyle: {
+              fontSize: 100, // Large font size for emphasis
+              fontWeight: 'bold', // Make the text bold
+          }
+          },
+          yAxis: {
+            max: maxMovies + 10, // Add a small buffer to the max value
+          },
+          series: [
+            {
+              data: item.data, // Data for the current interval
+              name: item.interval,
+            },
+          ],
+        };
+      }),
+    };     
+
+    // Apply options to chart
+    chart.setOption(options);
+  }, 1000); // Simulate data loading delay
+}
+
+else if (type === 'bar drilldown') {
+
+  const broadData = data.broad;
+  const detailedData = data.detailed;
+  
+  // Define the base chart
+  let option = {
+    ...commonOptions,
+    xAxis: {
+      name: 'Runtime (minutes)', // Label for the x-axis
+      data: broadData.ranges
+    },
+    yAxis: {name: 'Number of Movies'},
+    dataGroupId: '',
+    animationDurationUpdate: 500,
+    series: {
+      type: 'bar',
+      id: 'runtime',
+      data: broadData.counts.map((value, index) => ({
+        value: value,
+        groupId: broadData.ranges[index]
+      })),
+      universalTransition: {
+        enabled: true,
+        divideShape: 'clone'
+      }
+    }
+  };
+  
+  chart.setOption(option);
+  
+  // Handle drill-down on bar click
+  chart.on('click', function (event) {
+    if (event.data) {
+      const subData = detailedData[event.data.groupId];
+      console.log('subData',subData)
+      if (!subData) {
+        return;
+      }
+      chart.setOption({
+        xAxis: {
+          data: subData.ranges
+        },
+        series: {
+          type: 'bar',
+          id: 'runtime',
+          data: subData.counts,
+          universalTransition: {
+            enabled: true,
+            divideShape: 'clone'
+          }
+        },
+        graphic: [
+          {
+            type: 'text',
+            right: 30,
+            top: 50,
+            style: {
+              text: 'Back',
+              fontSize: 22,
+              fontWeight: 'bold',
+              fill: isDark ? '#fff' : '#000', // Add the conditional text color
+            },
+            onclick: function () {
+              chart.setOption(option);
+            }
+          }
+        ]
+      });
+    }
+  });
+    
+}
+
   chart.setOption(options);
 }
 
