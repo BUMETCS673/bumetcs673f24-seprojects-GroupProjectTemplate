@@ -2,7 +2,6 @@
 {% block title %}Word Cloud | MDVP{% endblock %}
 
 {% block content %}
-<h1>Word Cloud</h1>
 <div id="wordCloud" style="width: 100%; height: 600px;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
@@ -16,14 +15,26 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             chart.setOption({
-                title: { text: 'IMDB Reviews Word Cloud' },
+                title: {
+                    text: 'IMDB Reviews Word Cloud',
+                    left: 'center',        
+                    top: '5%',               
+                    textStyle: {
+                        color: '#d9695a',   
+                        fontSize: 28,     
+                        fontWeight: 'bold',
+                        fontFamily: 'Oswald, sans-serif'       
+                    }
+                },
                 tooltip: {},
                 series: [{
                     type: 'wordCloud',
                     shape: 'circle',
                     sizeRange: [12, 60],
                     rotationRange: [-90, 90],
-                    textStyle: { color: () => `rgb(${Math.random()*255}, ${Math.random()*255}, ${Math.random()*255})` },
+                    textStyle: {
+                        color: () => `rgb(${Math.random()*255}, ${Math.random()*255}, ${Math.random()*255})`
+                    },
                     data: data
                 }]
             });
