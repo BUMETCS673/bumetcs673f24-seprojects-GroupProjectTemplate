@@ -19,3 +19,17 @@ class Movie(models.Model):
         managed = False    # Do not create, delete, or alter this table with migrations
     def __str__(self):
         return self.title
+
+from django.db import models
+
+class Review(models.Model):
+    content = models.TextField()
+
+    movie_id = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'reviews'  
+        managed = False        
+
+    def __str__(self):
+        return self.content[:50]

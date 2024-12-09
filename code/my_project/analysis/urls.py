@@ -26,5 +26,7 @@ urlpatterns = [
     #path('AI_reports/', views.AI_reports_view, name='AI_reports') # AI_reports page
     #path('AI_reports/', views.AI_reports_view, name='AI_reports') # AI_reports page
     path('test/', lambda request: render(request, 'analysis/base.html')),
+    path('wordCloud/', views.word_cloud_page, name='wordCloud'),
+    path('wordCloud/data/', views.word_cloud_view, name='wordCloudData'),
 ]
 
