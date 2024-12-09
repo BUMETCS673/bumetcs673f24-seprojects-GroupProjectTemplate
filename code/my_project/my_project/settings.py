@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'analysis',
+    'users'
 ]
 
 MIDDLEWARE = [
@@ -90,6 +91,9 @@ DATABASES = {
         'PASSWORD': 'snowBall',              # The password for the database user
         'HOST': 'db',                          # The service name from docker-compose.yml (MySQL container)
         'PORT': '3306',                        # The default MySQL port   
+        'TEST': {
+            'NAME': 'test_movie_data',  # Explicitly set test database name
+        },
     }
 }
 

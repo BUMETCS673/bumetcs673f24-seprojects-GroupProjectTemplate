@@ -4,20 +4,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from .forms import LoginForm, RegistrationForm
-
-def index(request):
-    """
-    View function for the home page of the site.
-    """
-    # Context data to pass to the template, such as any necessary information for rendering
-    context = {
-        'page_title': 'Movie Data Visualizations Platform',
-        'message': 'Welcome to the Movie Data Visualizations Platform!',
-    }
-
-    # Render the HTML template index.html with the data in the context variable
-    return render(request, 'analysis/index.html', context)
-
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -33,8 +19,7 @@ def login_view(request):
                 messages.error(request, "Invalid username or password.")
     else:
         form = LoginForm()
-    return render(request, 'users/login.html', {'form': form})
-
+    return render(request, 'login.html', {'form': form})
 def register_view(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
@@ -51,10 +36,10 @@ def register_view(request):
             messages.error(request, "Please correct the errors below.")
     else:
         form = RegistrationForm()
-    return render(request, 'users/register.html', {'form': form})
+    return render(request, 'register.html', {'form': form})
 def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('login')
 def secure_view(request):
-    return render(request, 'users/secure_template.html')
+    return render(request, 'secure_template.html')
