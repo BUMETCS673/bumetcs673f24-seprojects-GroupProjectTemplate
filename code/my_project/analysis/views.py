@@ -14,6 +14,10 @@ import re
 from .models import Movie
 import pandas as pd  
 import pymysql
+from collections import Counter
+import os
+from django.conf import settings
+from .models import Review
 
 def index(request):
     """
@@ -642,3 +646,36 @@ def movie_runtime_view(request):
     }
 
     return render(request, 'analysis/movie_runtime.html', context)
+
+def fetch_reviews_data():
+    reviews = Review.objects.all().values('content')
+    return pd.DataFrame(list(reviews))
+
+def clean_text(content_series, stopwords_path):
+    """Clean and preprocess text data."""
+    combined_text = ' '.join(content_series.fillna(''))
+    combined_text = re.sub(r'[^\w\s]', '', combined_text).lower()
+    stopwords_full_path = os.path.join(settings.BASE_DIR, stopwords_path)
+    with open(stopwords_full_path, 'r', encoding='utf-8') as f:
+        stopwords = set(f.read().splitlines())
+    words = combined_text.split()
+    filtered_words = [word for word in words if word not in stopwords]
+    return filtered_words
+
+def generate_word_frequency(words, top_n=50):
+    """Generate word frequency data."""
+    word_counts = Counter(words)
+    return word_counts.most_common(top_n)
+
+def word_cloud_view(request):
+    """API endpoint to return word cloud data."""
+    stopwords_path = 'analysis/stopword_en.txt'
+    df_reviews = fetch_reviews_data()
+    cleaned_words = clean_text(df_reviews['content'], stopwords_path)
+    word_frequencies = generate_word_frequency(cleaned_words)
+    echarts_data = [{"name": word, "value": count} for word, count in word_frequencies]
+    return JsonResponse(echarts_data, safe=False)
+
+def word_cloud_page(request):
+    """Render word cloud page."""
+    return render(request, 'analysis/wordCloud.html')
